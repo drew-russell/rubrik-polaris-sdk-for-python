@@ -143,3 +143,4 @@ except Exception as err:
 
 ### Export ec2 to another region
 # pp.pprint(rubrik.submit_compute_export_ec2(snapshot_id='5d932b7d-6c12-4efb-b3f7-d79beddf655a', account_number='627297623784', region='aEU_WEST_3', vpc='vpc-05c6c96c', security_groups=['sg-bb06afd7'], subnet='subnet-85dff5ec', wait=True))
+pp.pprint(rubrik.submit_compute_export_gce(snapshot_id='acdfd33d-a3e8-4a7c-9e7e-28dfa3917889'))

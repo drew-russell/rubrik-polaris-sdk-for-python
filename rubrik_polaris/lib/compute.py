@@ -162,15 +162,22 @@ def get_compute_azure(self):
         raise
 
 
-def get_compute_gce(self):
+def get_compute_gce(self, object_id=None):
     """Retrieve all GCE instances from Polaris
         
     Returns:
         list -- List of all GCE instances
     """
     try:
-        query_name = "compute_gcp_gce"
-        return self._query(query_name, None)
+        if object_id:
+            query_name = "compute_gcp_gce_detail"
+            variables = {
+                "object_id": object_id
+            }
+            return self._query(query_name, variables)
+        else:
+            query_name = "compute_gcp_gce"
+            return self._query(query_name, None)
     except Exception:
         raise
 
@@ -396,6 +403,43 @@ def submit_compute_export_ec2(self, snapshot_id=None, account_number=None, regio
     result = _submit_compute_export(self, mutation_name='compute_export_ec2', variables=variables, wait=wait)
     return result
 
+def submit_compute_export_gce(self, snapshot_id=None, instance_name=None, machine_type=None, network_tags=None,
+                              subnet_name=None, zone=None, copy_labels=None, add_rubrik_labels=None, project_id=None,
+                              power_off=None, disk_encryption_type=None, kms_key=None, kms_key_id=None):
+    """ Submits the export of a GCE instance"""
+    from rubrik_polaris.exceptions import ValidationException
+    if not snapshot_id:
+        print("no snapshot_id specified")
+        return
+
+    try:
+        snapshot_details = self._get_snapshot(snapshot_id=snapshot_id)
+        self._pp.pprint(snapshot_details)
+        self._pp.pprint(self.get_compute_gce(object_id=snapshot_details['snappableId']))
+        if snapshot_details['isCorrupted']:
+            raise ValidationException("snapshot_id appears to be corrupted : {}".format(snapshot_id))
+        if snapshot_details['isDeletedFromSource']:
+            raise ValidationException("snapshot_id has been deleted from the source : {}".format(snapshot_id))
+        if snapshot_details['isExpired']:
+            raise ValidationException("snapshot_id is expired : {}".format(snapshot_id))
+    except Exception:
+        raise ValidationException("not a valid snapshot_id : {}".format(snapshot_id))
+
+    variables = {
+        "snapshot_id": snapshot_id, #UUID! - done
+        "instance_name": instance_name,
+        "machine_type": machine_type, #String!
+        "network_tags": network_tags, #[String!],
+        "subnet_name": subnet_name, #String!,
+        "zone": zone, #String!,
+        "copy_labels": copy_labels, #Boolean!,
+        "add_rubrik_labels": add_rubrik_labels, #Boolean!,
+        "project_id": project_id, #String!,
+        "power_off": power_off, #Boolean!,
+        "disk_encryption_type": disk_encryption_type, #DiskEncryptionType!,
+        "kms_key": kms_key, #kmsCryptoKey,
+        "kms_key_id": kms_key_id #String
+    }
 
 def _submit_compute_export(self, mutation_name=None, variables=None, wait=False):
     try:
